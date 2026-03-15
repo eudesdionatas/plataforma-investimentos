@@ -1,0 +1,502 @@
+{% extends 'portfolio/base.html' %}
+
+{% block title %}Cadastro de Operação{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Cadastro de Operação</h1>
+<form method="post" class="row g-3">
+    {% csrf_token %}
+    <div class="col-md-6">
+        <div class="row g-3">
+            <div class="col-md-3">
+                {{ form.is_renda_variavel.label_tag }}
+                {{ form.is_renda_variavel }}
+            </div>
+            <div class="col-md-9">
+                {{ form.nome_ativo.label_tag }}
+                {{ form.nome_ativo }}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        {{ form.corretora.label_tag }}
+        {{ form.corretora }}
+    </div>
+    <div class="col-md-6">
+        {{ form.compra_venda.label_tag }}
+        {{ form.compra_venda }}
+    </div>
+    <div class="col-md-6">
+        {{ form.mercado.label_tag }}
+        {{ form.mercado }}
+    </div>
+    <div class="col-md-6">
+        {{ form.tipo.label_tag }}
+        {{ form.tipo }}
+    </div>
+    <div class="col-md-6" id="div_descricao" style="display: block;">
+        {{ form.descricao.label_tag }}
+        {{ form.descricao }}
+    </div>
+    <div class="col-md-6">
+        {{ form.moeda.label_tag }}
+        {{ form.moeda }}
+    </div>
+    <div class="col-md-6">
+        {{ form.quantidade.label_tag }}
+        {{ form.quantidade }}
+    </div>
+    <div class="col-md-6">
+        {{ form.preco_unitario.label_tag }}
+        {{ form.preco_unitario }}
+    </div>
+    <div class="col-md-6">
+        {{ form.valor_total.label_tag }}
+        {{ form.valor_total }}
+    </div>
+    <div class="col-md-6">
+        {{ form.data.label_tag }}
+        {{ form.data }}
+    </div>
+    <div class="col-12">
+        {{ form.observacao.label_tag }}
+        {{ form.observacao }}
+    </div>
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+</form>
+
+<script>
+// Função para formatar moeda
+function formatCurrency(value, currency) {
+    const locales = {
+        'BRL': 'pt-BR',
+        'USD': 'en-US',
+        'EUR': 'de-DE',
+        'GBP': 'en-GB',
+        'JPY': 'ja-JP',
+        'CAD': 'en-CA',
+        'AUD': 'en-AU',
+        'CHF': 'de-CH',
+        'CNY': 'zh-CN',
+        'SEK': 'sv-SE',
+        'ARS': 'es-AR',
+        'CLP': 'es-CL',
+        'MXN': 'es-MX',
+        'PEN': 'es-PE',
+        'COP': 'es-CO',
+        'UYU': 'es-UY',
+        'PYG': 'es-PY',
+        'BOB': 'es-BO',
+        'VEF': 'es-VE',
+        'KRW': 'ko-KR',
+        'INR': 'en-IN',
+        'RUB': 'ru-RU',
+        'ZAR': 'en-ZA',
+        'TRY': 'tr-TR',
+        'SGD': 'en-SG',
+        'HKD': 'zh-HK',
+        'NZD': 'en-NZ',
+        'NOK': 'no-NO',
+        'DKK': 'da-DK',
+        'PLN': 'pl-PL',
+        'CZK': 'cs-CZ',
+        'HUF': 'hu-HU',
+        'ILS': 'he-IL',
+        'EGP': 'ar-EG'
+    };
+    const locale = locales[currency] || 'pt-BR';
+    const formatter = new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 6
+    });
+    return formatter.format(value);
+}
+
+// Função para parsear valor formatado
+function parseCurrency(value) {
+    // Remove símbolos e espaços
+    let cleaned = value.replace(/[^\d.,-]/g, '').trim();
+
+    if (!cleaned) return '';
+
+    // Se houver '.' e ',' assume formatação brasileira ('.' milhares, ',' decimais)
+    if (cleaned.includes('.') && cleaned.includes(',')) {
+        cleaned = cleaned.replace(/\./g, '').replace(/,/g, '.');
+    } else if (cleaned.includes(',')) {
+        // Se só tiver vírgula, assume que é separador decimal
+        cleaned = cleaned.replace(/,/g, '.');
+    }
+
+    return cleaned;
+}
+
+// Aplica máscara em tempo real para campos monetários
+function applyMask(input) {
+    console.log('applyMask called for', input.id);
+    if (input.masking) return; // Evita loop
+    input.masking = true;
+    const moeda = document.getElementById('id_moeda').value;
+    const rawValue = parseCurrency(input.value);
+    console.log('rawValue:', rawValue);
+    input.value = formatCurrency(parseFloat(rawValue) || 0, moeda);
+    console.log('formatted:', input.value);
+    input.masking = false;
+}
+
+// Função para verificar se um campo tem valor válido
+function hasValue(input) {
+    const val = parseFloat(parseCurrency(input.value));
+    return !isNaN(val) && val > 0;
+}
+
+// Limpa campos relacionados quando um fica vazio (define como zero)
+function clearRelated(input) {
+    if (input === quantidadeInput && !hasValue(quantidadeInput)) {
+        precoInput.value = '0';
+        valorInput.value = '0';
+    } else if (input === precoInput && !hasValue(precoInput)) {
+        valorInput.value = '0';
+    } else if (input === valorInput && !hasValue(valorInput)) {
+        precoInput.value = '0';
+    }
+}
+
+// Calcula o terceiro campo baseado nos dois preenchidos, sempre que dois tiverem valor
+function calculate() {
+    console.log('calculate called');
+    const moeda = document.getElementById('id_moeda').value;
+    const qtd = hasValue(quantidadeInput) ? parseFloat(quantidadeInput.value) : 0;
+    const preco = hasValue(precoInput) ? parseFloat(parseCurrency(precoInput.value)) : 0;
+    const valor = hasValue(valorInput) ? parseFloat(parseCurrency(valorInput.value)) : 0;
+
+    if (qtd > 0 && preco > 0) {
+        // Calcula total = quantidade * preço unitário
+        const calcValor = qtd * preco;
+        valorInput.value = formatCurrency(calcValor, moeda);
+    } else if (qtd > 0 && valor > 0) {
+        // Calcula preço unitário = total / quantidade
+        const calcPreco = valor / qtd;
+        precoInput.value = formatCurrency(calcPreco, moeda);
+    } else if (preco > 0 && valor > 0) {
+        // Calcula quantidade = total / preço unitário
+        const calcQtd = valor / preco;
+        quantidadeInput.value = calcQtd.toFixed(6);
+    }
+}
+
+// Formata o valor do preço unitário
+function formatPreco() {
+    const moeda = document.getElementById('id_moeda').value;
+    const rawValue = parseCurrency(precoInput.value);
+    if (rawValue && !isNaN(rawValue)) {
+        precoInput.value = formatCurrency(parseFloat(rawValue), moeda);
+    }
+}
+
+// Remove formatação do preço unitário para edição
+function unformatPreco() {
+    const moeda = document.getElementById('id_moeda').value;
+    const rawValue = parseCurrency(precoInput.value);
+    if (!rawValue) {
+        precoInput.value = formatCurrency(0, moeda); // Mostra R$ 0,00
+    }
+}
+
+// Formata o valor total
+function formatValor() {
+    const moeda = document.getElementById('id_moeda').value;
+    const rawValue = parseCurrency(valorInput.value);
+    if (rawValue && !isNaN(rawValue)) {
+        valorInput.value = formatCurrency(parseFloat(rawValue), moeda);
+    }
+}
+
+// Remove formatação do valor total para edição
+function unformatValor() {
+    const moeda = document.getElementById('id_moeda').value;
+    const rawValue = parseCurrency(valorInput.value);
+    if (!rawValue) {
+        valorInput.value = formatCurrency(0, moeda); // Mostra R$ 0,00
+    }
+}
+
+// Aplica formatação e garante que se refaz o cálculo após troca de moeda
+function applyFormatting() {
+    // Formata valores já presentes
+    formatPreco();
+    formatValor();
+    calculate();
+
+    // Define listeners de blur para formatar os campos
+    precoInput.removeEventListener('blur', formatPreco);
+    valorInput.removeEventListener('blur', formatValor);
+    precoInput.addEventListener('blur', formatPreco);
+    valorInput.addEventListener('blur', formatValor);
+
+    // Define listeners de focus para remover formatação ao clicar (para edição)
+    precoInput.removeEventListener('focus', unformatPreco);
+    valorInput.removeEventListener('focus', unformatValor);
+    quantidadeInput.removeEventListener('focus', () => { if (!quantidadeInput.value.trim()) quantidadeInput.value = '0'; });
+    precoInput.addEventListener('focus', unformatPreco);
+    valorInput.addEventListener('focus', unformatValor);
+    quantidadeInput.addEventListener('focus', () => { if (!quantidadeInput.value.trim()) quantidadeInput.value = '0'; });
+}
+
+// Inicializar atributos para campos vazios
+document.querySelectorAll('#id_quantidade, #id_preco_unitario, #id_valor_total').forEach(input => {
+    input.setAttribute('data-previous-value', input.value);
+    if (input.value.trim() === '') {
+        input.setAttribute('data-initial-empty', 'true');
+    }
+    // Event listener para input: zerar relacionados se vazio, senão calcular
+    input.addEventListener('input', () => {
+        console.log('input event on', input.id, 'value:', input.value);
+        if (input === precoInput || input === valorInput) {
+            applyMask(input); // Aplica máscara em tempo real
+        }
+        if (input.value.trim() === '' && input.getAttribute('data-previous-value') !== '') {
+            input.setAttribute('manually-cleared', 'true');
+        }
+        input.setAttribute('data-previous-value', input.value);
+        if (!input.hasAttribute('manually-cleared')) {
+            document.querySelectorAll('#id_quantidade, #id_preco_unitario, #id_valor_total').forEach(inp => inp.removeAttribute('manually-cleared'));
+        }
+        // Sempre verificar se precisa zerar ou calcular
+        clearRelated(input);
+        calculate();
+    });
+});
+
+// Aplicar quando moeda muda
+document.getElementById('id_moeda').addEventListener('change', applyFormatting);
+
+// Inicializar
+applyFormatting();
+calculate();
+
+// Mapa expandido de tickers para razão social (com mais empresas listadas na B3)
+const tickerToRazaoSocial = {
+    'PETR4': 'Petróleo Brasileiro S.A. - Petrobras',
+    'PETR3': 'Petróleo Brasileiro S.A. - Petrobras',
+    'VALE3': 'Vale S.A.',
+    'ITUB4': 'Itaú Unibanco Holding S.A.',
+    'ITUB3': 'Itaú Unibanco Holding S.A.',
+    'BBDC4': 'Banco Bradesco S.A.',
+    'BBDC3': 'Banco Bradesco S.A.',
+    'WEGE3': 'WEG S.A.',
+    'MGLU3': 'Magazine Luiza S.A.',
+    'ABEV3': 'Ambev S.A.',
+    'ITSA4': 'Itaúsa - Investimentos Itaú S.A.',
+    'B3SA3': 'B3 S.A. - Brasil, Bolsa, Balcão',
+    'RENT3': 'Localiza Rent a Car S.A.',
+    'LREN3': 'Lojas Renner S.A.',
+    'PETZ3': 'Pet Center Comércio e Participações S.A.',
+    'RAIL3': 'Rumo S.A.',
+    'EGIE3': 'Engie Brasil Energia S.A.',
+    'CPLE6': 'Companhia Paranaense de Energia - COPEL',
+    'CPLE3': 'Companhia Paranaense de Energia - COPEL',
+    'SBSP3': 'Companhia de Saneamento Básico do Estado de São Paulo - SABESP',
+    'TAEE11': 'Transmissão Paulista S.A.',
+    'TAEE4': 'Transmissão Paulista S.A.',
+    'TAEE3': 'Transmissão Paulista S.A.',
+    'ENBR3': 'EDP - Energias do Brasil S.A.',
+    'EQTL3': 'Equatorial Energia S.A.',
+    'CSAN3': 'Cosan S.A.',
+    'USIM5': 'Usinas Siderúrgicas de Minas Gerais S.A. - USIMINAS',
+    'USIM3': 'Usinas Siderúrgicas de Minas Gerais S.A. - USIMINAS',
+    'GGBR4': 'Gerdau S.A.',
+    'GGBR3': 'Gerdau S.A.',
+    'GOAU4': 'Metalúrgica Gerdau S.A.',
+    'GOAU3': 'Metalúrgica Gerdau S.A.',
+    'CSNA3': 'Companhia Siderúrgica Nacional',
+    'BRAP4': 'Bradespar S.A.',
+    'BRAP3': 'Bradespar S.A.',
+    'KLBN11': 'Klabin S.A.',
+    'KLBN4': 'Klabin S.A.',
+    'KLBN3': 'Klabin S.A.',
+    'SUZB3': 'Suzano S.A.',
+    'JBSS3': 'JBS S.A.',
+    'MRFG3': 'Marfrig Global Foods S.A.',
+    'BRFS3': 'BRF S.A.',
+    'SLCE3': 'SLC Agrícola S.A.',
+    'SMTO3': 'São Martinho S.A.',
+    'CAML3': 'Camil Alimentos S.A.',
+    'MDIA3': 'M. Dias Branco S.A. Indústria e Comércio de Alimentos',
+    'BEEF3': 'Minerva S.A.',
+    'NTCO3': 'Natura &Co Holding S.A.',
+    'RADL3': 'Raia Drogasil S.A.',
+    'HYPE3': 'Hypera S.A.',
+    'FLRY3': 'Fleury S.A.',
+    'QUAL3': 'Qualicorp Consultoria e Corretora de Seguros S.A.',
+    'RDOR3': 'Rede D\'Or São Luiz S.A.',
+    'HAPV3': 'Hapvida Participações e Investimentos S.A.',
+    'VIVT4': 'Telefônica Brasil S.A.',
+    'VIVT3': 'Telefônica Brasil S.A.',
+    'TIMS3': 'TIM S.A.',
+    'OIBR4': 'Oi S.A.',
+    'OIBR3': 'Oi S.A.',
+    'EMBR3': 'Embraer S.A.',
+    'AZUL4': 'Azul S.A.',
+    'GOLL4': 'Gol Linhas Aéreas Inteligentes S.A.',
+    'CVCB3': 'CVC Brasil Operadora e Agência de Viagens S.A.',
+    'PCAR3': 'Companhia Brasileira de Distribuição',
+    'VIIA3': 'Via S.A.',
+    'AMER3': 'Americanas S.A.',
+    'SOMA3': 'Grupo de Moda Soma S.A.',
+    'LWSA3': 'Locaweb Serviços de Internet S.A.',
+    'ALPA4': 'Alpargatas S.A.',
+    'ALPA3': 'Alpargatas S.A.',
+    'CYRE3': 'Cyrela Brazil Realty S.A. Empreendimentos e Participações',
+    'EZTC3': 'EZTEC Empreendimentos e Participações S.A.',
+    'MRVE3': 'MRV Engenharia e Participações S.A.',
+    'TEND3': 'Construtora Tenda S.A.',
+    'DIRR3': 'Direcional Engenharia S.A.',
+    'EVEN3': 'Even Construtora e Incorporadora S.A.',
+    'IGTI11': 'Iguatemi S.A.',
+    'IGTI3': 'Iguatemi S.A.',
+    'MULT3': 'Multiplan Empreendimentos Imobiliários S.A.',
+    'BRML3': 'BR Malls Participações S.A.',
+    'HGLG11': 'CSHG Logística Fundo de Investimento Imobiliário - FII',
+    'XPML11': 'XP Malls Fundo de Investimento Imobiliário',
+    'VISC11': 'Vinci Shopping Centers Fundo de Investimento Imobiliário',
+    'HGBS11': 'Hedge Brasil Shopping Fundo de Investimento Imobiliário',
+    'BCFF11': 'BC Fundo de Fundos - FII',
+    'HGRU11': 'CSHG Renda Urbana Fundo de Investimento Imobiliário',
+    'KNRI11': 'Kinea Renda Imobiliária Fundo de Investimento Imobiliário',
+    'XPLG11': 'XP Log Fundo de Investimento Imobiliário',
+    'IRDM11': 'Iridium Recebíveis Imobiliários Fundo de Investimento Imobiliário',
+    'RECR11': 'Rec Recebíveis Imobiliários Fundo de Investimento Imobiliário',
+    'BTLG11': 'BTG Pactual Logística Fundo de Investimento Imobiliário',
+    'GGRC11': 'GGR Covepi Renda Fundo de Investimento Imobiliário',
+    'RBRR11': 'RBR Rendimento High Grade Fundo de Investimento Imobiliário',
+    'VINO11': 'Vinci Offices Fundo de Investimento Imobiliário',
+    'HFOF11': 'Hedge Top FOFII 3 Fundo de Investimento Imobiliário',
+    'RBRF11': 'RBR Alpha Fundo de Investimento Imobiliário',
+    'TGAR11': 'TG Ativo Real Fundo de Investimento Imobiliário',
+    'PATL11': 'Pátria Logística Fundo de Investimento Imobiliário',
+    'RCRB11': 'Rio Bravo Renda Corporativa Fundo de Investimento Imobiliário',
+    'XPIN11': 'XP Industrial Fundo de Investimento Imobiliário',
+    'ALZR11': 'Alianza Trust Renda Imobiliária Fundo de Investimento Imobiliário',
+    'HCTR11': 'Hectare CE Fundo de Investimento Imobiliário',
+    'RBRP11': 'RBR Properties Fundo de Investimento Imobiliário',
+    'VILG11': 'Vinci Logística Fundo de Investimento Imobiliário',
+    'HSML11': 'HSI Malls Fundo de Investimento Imobiliário',
+    'KNHY11': 'Kinea High Yield CRI Fundo de Investimento Imobiliário',
+    'FEXC11': 'BTG Pactual Fundo de CRI',
+    'BTCR11': 'BTG Pactual Crédito Imobiliário Fundo de Investimento Imobiliário',
+    'DEVA11': 'Devant Recebíveis Imobiliários Fundo de Investimento Imobiliário',
+    'MALL11': 'Malls Brasil Plural Fundo de Investimento Imobiliário',
+    'PVBI11': 'VBI Prime Properties Fundo de Investimento Imobiliário',
+    'URPR11': 'Urca Prime Renda Fundo de Investimento Imobiliário',
+    'HABT11': 'Habitat II Fundo de Investimento Imobiliário',
+    'SPTW11': 'SP Downtown Fundo de Investimento Imobiliário',
+    'TRNT11': 'Torre Norte Fundo de Investimento Imobiliário',
+    'PORD11': 'Polo Recebíveis Imobiliários Fundo de Investimento Imobiliário',
+    'FLMA11': 'Continental Square Faria Lima Fundo de Investimento Imobiliário',
+    'BTRA11': 'BTG Pactual Terras Agrícolas Fundo de Investimento Imobiliário',
+    'CXTL11': 'Caixa Rio Bravo Fundo de Investimento Imobiliário',
+    'RBRL11': 'RBR Log Fundo de Investimento Imobiliário',
+    'RBHG11': 'RBR High Grade Fundo de Investimento Imobiliário',
+    'RBRY11': 'RBR Crédito Imobiliário Fundo de Investimento Imobiliário',
+    'RBVO11': 'RBR Office Fundo de Investimento Imobiliário',
+    'RBRD11': 'RBR DGI Fundo de Investimento Imobiliário',
+    'RBRS11': 'RBR Shopping Fundo de Investimento Imobiliário',
+    'RBED11': 'RBR Desenvolvimento Fundo de Investimento Imobiliário',
+    'RBVA11': 'RBR Agro Fundo de Investimento Imobiliário',
+    'RBFF11': 'RBR Alpha Multiestratégia Fundo de Investimento Imobiliário',
+    'RBHY11': 'RBR High Yield Fundo de Investimento Imobiliário',
+    'RBDS11': 'RBR Desenvolvimento Fundo de Investimento Imobiliário',
+    'RBTS11': 'RBR Triple Fundo de Investimento Imobiliário',
+    'RBGS11': 'RBR Gestão Fundo de Investimento Imobiliário',
+    'RBIR11': 'RBR Renda Industrial Fundo de Investimento Imobiliário',
+    'RBOP11': 'RBR Oportunidades Fundo de Investimento Imobiliário',
+    'RBSC11': 'RBR Shopping Fundo de Investimento Imobiliário',
+    'RBTT11': 'RBR Triple A Fundo de Investimento Imobiliário',
+    'RBCA11': 'RBR Crédito Imobiliário Fundo de Investimento Imobiliário',
+    'RBCE11': 'RBR Desenvolvimento Fundo de Investimento Imobiliário',
+    'RBCL11': 'RBR Logística Fundo de Investimento Imobiliário',
+    'RBCM11': 'RBR Multimercado Fundo de Investimento Imobiliário',
+    'RBCR11': 'RBR Crédito Imobiliário Fundo de Investimento Imobiliário',
+    'RBCS11': 'RBR Shopping Fundo de Investimento Imobiliário',
+    'RBCT11': 'RBR Triple Fundo de Investimento Imobiliário',
+    'RBCV11': 'RBR Crédito Imobiliário Fundo de Investimento Imobiliário',
+    'RBDA11': 'RBR Desenvolvimento Fundo de Investimento Imobiliário',
+    'RBDG11': 'RBR Desenvolvimento Fundo de Investimento Imobiliário',
+    'RBDH11': 'RBR High Grade Fundo de Investimento Imobiliário',
+    'RBDI11': 'RBR Renda Industrial Fundo de Investimento Imobiliário',
+    'RBDL11': 'RBR Logística Fundo de Investimento Imobiliário',
+    'RBDM11': 'RBR Multimercado Fundo de Investimento Imobiliário',
+    'RBDO11': 'RBR Oportunidades Fundo de Investimento Imobiliário',
+    'RBDR11': 'RBR Renda Residencial Fundo de Investimento Imobiliário',
+    'RBDS11': 'RBR Desenvolvimento Fundo de Investimento Imobiliário',
+    'RBED11': 'RBR Desenvolvimento Fundo de Investimento Imobiliário',
+    'RBFF11': 'RBR Alpha Fundo de Investimento Imobiliário',
+    'RBGS11': 'RBR Gestão Fundo de Investimento Imobiliário',
+    'RBHG11': 'RBR High Grade Fundo de Investimento Imobiliário',
+    'RBHY11': 'RBR High Yield Fundo de Investimento Imobiliário',
+    'RBIR11': 'RBR Renda Industrial Fundo de Investimento Imobiliário',
+    'RBOP11': 'RBR Oportunidades Fundo de Investimento Imobiliário',
+    'RBRL11': 'RBR Log Fundo de Investimento Imobiliário',
+    'RBRS11': 'RBR Shopping Fundo de Investimento Imobiliário',
+    'RBSC11': 'RBR Shopping Fundo de Investimento Imobiliário',
+    'RBTT11': 'RBR Triple A Fundo de Investimento Imobiliário',
+    'RBVA11': 'RBR Agro Fundo de Investimento Imobiliário',
+    'RBVO11': 'RBR Office Fundo de Investimento Imobiliário',
+    'RBED11': 'RBR Desenvolvimento Fundo de Investimento Imobiliário',
+    'RBFF11': 'RBR Alpha Fundo de Investimento Imobiliário',
+    'RBGS11': 'RBR Gestão Fundo de Investimento Imobiliário',
+    'RBHG11': 'RBR High Grade Fundo de Investimento Imobiliário',
+    'RBHY11': 'RBR High Yield Fundo de Investimento Imobiliário',
+    'RBIR11': 'RBR Renda Industrial Fundo de Investimento Imobiliário',
+    'RBOP11': 'RBR Oportunidades Fundo de Investimento Imobiliário',
+    'RBRL11': 'RBR Log Fundo de Investimento Imobiliário',
+    'RBRS11': 'RBR Shopping Fundo de Investimento Imobiliário',
+    'RBSC11': 'RBR Shopping Fundo de Investimento Imobiliário',
+    'RBTT11': 'RBR Triple A Fundo de Investimento Imobiliário',
+    'RBVA11': 'RBR Agro Fundo de Investimento Imobiliário',
+    'RBVO11': 'RBR Office Fundo de Investimento Imobiliário',
+    // Nota: Esta é uma lista parcial. Para todas as empresas, seria necessário uma API ou banco de dados completo.
+    // Adicione mais conforme necessário ou integre com uma fonte de dados externa.
+};
+
+document.getElementById('id_is_renda_variavel').addEventListener('change', function() {
+    const nomeAtivoInput = document.getElementById('id_nome_ativo');
+    const descricaoDiv = document.getElementById('div_descricao');
+    const descricaoInput = document.getElementById('id_descricao');
+    if (this.checked) {
+        nomeAtivoInput.placeholder = 'Digite o Ticker';
+        descricaoDiv.style.display = 'block';
+        // Adicionar listener para auto-preencher descrição
+        nomeAtivoInput.addEventListener('blur', function() {
+            const ticker = this.value.toUpperCase();
+            if (tickerToRazaoSocial[ticker]) {
+                descricaoInput.value = tickerToRazaoSocial[ticker];
+            } else {
+                descricaoInput.value = ''; // Limpar se não encontrado
+            }
+        });
+    } else {
+        nomeAtivoInput.placeholder = 'Digite o nome do ativo - Fundo / Título / Debênture / CDB...';
+        descricaoDiv.style.display = 'none';
+        descricaoInput.value = '';
+    }
+});
+
+// Inicializar se já estiver marcado
+if (document.getElementById('id_is_renda_variavel').checked) {
+    document.getElementById('id_nome_ativo').addEventListener('blur', function() {
+        const ticker = this.value.toUpperCase();
+        const descricaoInput = document.getElementById('id_descricao');
+        if (tickerToRazaoSocial[ticker]) {
+            descricaoInput.value = tickerToRazaoSocial[ticker];
+        } else {
+            descricaoInput.value = '';
+        }
+    });
+}
+</script>
+{% endblock %}
