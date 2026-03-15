@@ -1,1 +1,1 @@
-Estou usando Python + Django + HTML + Bootstrap + PostgreSQL (Por enquanto)
+Estou usando Python + Django + HTML + Bootstrap + PostgreSQL (por enquanto)
