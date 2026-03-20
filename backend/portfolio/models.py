@@ -179,7 +179,6 @@ class Operacao(models.Model):
     compra_venda = models.CharField(max_length=10, choices=TipoOperacaoChoices.choices, default=TipoOperacaoChoices.COMPRA, verbose_name="Negociação")
     mercado = models.CharField(max_length=20, choices=MercadoChoices.choices, default=MercadoChoices.AVISTA)
     tipo = models.CharField(max_length=20, choices=TipoAtivoChoices.choices, default=TipoAtivoChoices.ACAO)
-    descricao = models.CharField(max_length=20, verbose_name="Descrição", blank=True, default="")
     quantidade = models.DecimalField(max_digits=18, decimal_places=6)
     preco_unitario = models.DecimalField(max_digits=14, decimal_places=6, verbose_name="Preço unitário")
     valor_total = models.DecimalField(max_digits=14, decimal_places=2)

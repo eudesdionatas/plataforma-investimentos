@@ -12,8 +12,8 @@ class AtivoAdmin(admin.ModelAdmin):
 
 @admin.register(Operacao)
 class OperacaoAdmin(admin.ModelAdmin):
-    list_display = ("data", "descricao", "compra_venda", "mercado", "quantidade", "valor_total")
-    search_fields = ("descricao", "corretora", "nome_ativo")
+    list_display = ("data", "nome_ativo", "compra_venda", "mercado", "quantidade", "valor_total")
+    search_fields = ("nome_ativo", "corretora")
     list_filter = ("compra_venda", "mercado", "tipo", "moeda")
 
 
