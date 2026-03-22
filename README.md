@@ -2,7 +2,9 @@ Estou usando:
  - Python 
  - Django 
  - HTML 
- - Bootstrap 
+ - Bootstrap
+ - Bootstrap
+ - Javascript 
  - PostgreSQL (por enquanto)
 
 Ambiente de desenvolvimento:
