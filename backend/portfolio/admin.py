@@ -12,9 +12,9 @@ class AtivoAdmin(admin.ModelAdmin):
 
 @admin.register(Operacao)
 class OperacaoAdmin(admin.ModelAdmin):
-    list_display = ("data", "nome_ativo", "compra_venda", "mercado", "quantidade", "valor_total")
+    list_display = ("data", "nome_ativo", "operacao", "mercado", "quantidade", "valor_total")
     search_fields = ("nome_ativo", "corretora")
-    list_filter = ("compra_venda", "mercado", "tipo", "moeda")
+    list_filter = ("operacao", "mercado", "tipo", "moeda")
 
 
 @admin.register(Provento)

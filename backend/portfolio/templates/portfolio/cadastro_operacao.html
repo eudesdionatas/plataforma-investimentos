@@ -9,11 +9,11 @@
     {% csrf_token %}
     <div class="col-md-6">
         <div class="row g-3">
-            <div class="col-md-3">
-                {{ form.is_renda_variavel.label_tag }}
-                {{ form.is_renda_variavel }}
+            <div class="col-md-5">
+                {{ form.onde_investir.label_tag }}
+                {{ form.onde_investir }}
             </div>
-            <div class="col-md-9">
+            <div class="col-md-7">
                 {{ form.nome_ativo.label_tag }}
                 {{ form.nome_ativo }}
             </div>
@@ -24,8 +24,8 @@
         {{ form.corretora }}
     </div>
     <div class="col-md-6">
-        {{ form.compra_venda.label_tag }}
-        {{ form.compra_venda }}
+        {{ form.operacao.label_tag }}
+        {{ form.operacao }}
     </div>
     <div class="col-md-6">
         {{ form.mercado.label_tag }}

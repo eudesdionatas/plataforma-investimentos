@@ -2,6 +2,30 @@ let quantidadeInput;
 let precoInput;
 let valorInput;
 
+const tipoAtivoPorClasse = {
+    rendaFixa: [
+        { value: 'FUNDO', label: 'Fundo' },
+        { value: 'TITULO_PUBLICO', label: 'Título Público' },
+        { value: 'DEBENTURE', label: 'Debênture' },
+        { value: 'CDB', label: 'CDB' },
+        { value: 'RDB', label: 'RDB' },
+        { value: 'LCI', label: 'LCI' },
+        { value: 'LCA', label: 'LCA' },
+        { value: 'CRI', label: 'CRI' },
+        { value: 'CRA', label: 'CRA' }
+    ],
+    rendaVariavel: [
+        { value: 'ACAO', label: 'Ação' },
+        { value: 'FII', label: 'FII' },
+        { value: 'ETF', label: 'ETF' },
+        { value: 'FUNDO_ACOES', label: 'Fundo de ações' },
+        { value: 'FUNDO_MULTIMERCADO', label: 'Fundo Multimercado' }
+    ]
+};
+
+const ondeInvestirRendaVariavel = new Set(['BOLSA_VALORES', 'FUNDOS_INVESTIMENTO']);
+const ondeInvestirRendaFixa = new Set(['TESOURO_DIRETO', 'RENDA_FIXA', 'RENDA_FIXA_EUA']);
+
 // Mapa de moedas para locales
 const currencyLocales = {
     'BRL': 'pt-BR', 'USD': 'en-US', 'EUR': 'de-DE', 'GBP': 'en-GB',
@@ -56,6 +80,12 @@ function setQuantidade(val) {
     if (Math.abs(getQuantidade() - val) < 0.000001) return;
     // Arredonda para 6 casas decimais e remove zeros à direita
     quantidadeInput.value = parseFloat(val.toFixed(6));
+}
+
+function adjustQuantidade(delta) {
+    const next = Math.max(0, getQuantidade() + delta);
+    setQuantidade(next);
+    updateCalculations();
 }
 
 function getPrecoValue() {
@@ -202,16 +232,59 @@ function setupAtmMask(input, renderFunc) {
     input.addEventListener('click', function() { this.focus(); renderFunc(); });
 }
 
-function updateNomeAtivoHint(isRendaVariavelChecked) {
+function getClassePorOndeInvestir(ondeInvestir) {
+    if (ondeInvestirRendaVariavel.has(ondeInvestir)) {
+        return 'rendaVariavel';
+    }
+
+    if (ondeInvestirRendaFixa.has(ondeInvestir)) {
+        return 'rendaFixa';
+    }
+
+    return 'todos';
+}
+
+function updateNomeAtivoHint(ondeInvestir) {
     const nomeAtivoInput = document.getElementById('id_nome_ativo');
     if (!nomeAtivoInput) return;
 
     const hintRendaFixa = 'Fundo, Título público, Debênture, CDB, RDB, LCI, LCA, CRI, CRA...';
     const hintRendaVariavel = 'Ticker da Empresa, Fundo Imobiliário, ETF, Fundo de ações, Fundo Multimercado...';
-    const hint = isRendaVariavelChecked ? hintRendaVariavel : hintRendaFixa;
+    const classe = getClassePorOndeInvestir(ondeInvestir);
+    const hint = classe === 'rendaVariavel' ? hintRendaVariavel : hintRendaFixa;
 
     // O atributo title exibe o hint nativo ao passar o mouse sobre o campo.
     nomeAtivoInput.title = hint;
+}
+
+function updateTipoAtivoOptions(ondeInvestir) {
+    const tipoAtivoSelect = document.getElementById('id_tipo');
+    if (!tipoAtivoSelect) return;
+
+    const selectedValue = tipoAtivoSelect.value;
+    const classe = getClassePorOndeInvestir(ondeInvestir);
+    let options = tipoAtivoPorClasse.rendaFixa;
+
+    if (classe === 'rendaVariavel') {
+        options = tipoAtivoPorClasse.rendaVariavel;
+    } else if (classe === 'todos') {
+        options = [...tipoAtivoPorClasse.rendaVariavel, ...tipoAtivoPorClasse.rendaFixa];
+    }
+
+    tipoAtivoSelect.innerHTML = '';
+
+    options.forEach(function (optionData) {
+        const option = document.createElement('option');
+        option.value = optionData.value;
+        option.textContent = optionData.label;
+        tipoAtivoSelect.appendChild(option);
+    });
+
+    const selectedStillExists = options.some(function (optionData) {
+        return optionData.value === selectedValue;
+    });
+
+    tipoAtivoSelect.value = selectedStillExists ? selectedValue : options[0].value;
 }
 
 // Inicialização
@@ -222,10 +295,22 @@ function init() {
 
     if (!quantidadeInput || !precoInput || !valorInput) return;
 
-    // Configurações para campo Quantidade: passo inteiro e bloqueio de caracteres não numéricos
-    quantidadeInput.setAttribute('step', '1');
+    // Permite que o incremento/decremento seja sempre relativo ao valor atual.
+    quantidadeInput.setAttribute('step', 'any');
     quantidadeInput.setAttribute('min', '0');
     quantidadeInput.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            adjustQuantidade(1);
+            return;
+        }
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            adjustQuantidade(-1);
+            return;
+        }
+
         if (['e', 'E', '+', '-'].includes(e.key)) {
             e.preventDefault();
         }
@@ -243,13 +328,15 @@ function init() {
         renderValorTotal();
     });
 
-    const rendaVariavelInput = document.getElementById('id_is_renda_variavel');
-    if (rendaVariavelInput) {
-        rendaVariavelInput.addEventListener('change', function () {
-            updateNomeAtivoHint(this.checked);
+    const ondeInvestirInput = document.getElementById('id_onde_investir');
+    if (ondeInvestirInput) {
+        ondeInvestirInput.addEventListener('change', function () {
+            updateNomeAtivoHint(this.value);
+            updateTipoAtivoOptions(this.value);
         });
 
-        updateNomeAtivoHint(rendaVariavelInput.checked);
+        updateNomeAtivoHint(ondeInvestirInput.value);
+        updateTipoAtivoOptions(ondeInvestirInput.value);
     }
 
     // Carrega dígitos a partir dos valores iniciais (edit mode ou reload)

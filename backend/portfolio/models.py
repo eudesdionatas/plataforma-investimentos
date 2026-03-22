@@ -9,12 +9,21 @@ class ClasseAtivoChoices(models.TextChoices):
 class TipoAtivoChoices(models.TextChoices):
     ACAO = "ACAO", "Ação"
     FII = "FII", "FII"
+    ETF = "ETF", "ETF"
+    FUNDO_ACOES = "FUNDO_ACOES", "Fundo de ações"
+    FUNDO_MULTIMERCADO = "FUNDO_MULTIMERCADO", "Fundo Multimercado"
+    FUNDO = "FUNDO", "Fundo"
+    TITULO_PUBLICO = "TITULO_PUBLICO", "Título Público"
+    DEBENTURE = "DEBENTURE", "Debênture"
+    CDB = "CDB", "CDB"
+    RDB = "RDB", "RDB"
+    LCI = "LCI", "LCI"
+    LCA = "LCA", "LCA"
+    CRI = "CRI", "CRI"
+    CRA = "CRA", "CRA"
     STOCK = "STOCK", "Stock"
     REIT = "REIT", "REIT"
-    ETF = "ETF", "ETF"
-    TITULO_PUBLICO = "TITULO_PUBLICO", "Título Público"
     TITULO_PRIVADO = "TITULO_PRIVADO", "Título Privado"
-    CDB = "CDB", "CDB"
 
 
 class MercadoChoices(models.TextChoices):
@@ -23,8 +32,16 @@ class MercadoChoices(models.TextChoices):
 
 
 class TipoOperacaoChoices(models.TextChoices):
+    SUBSCRICAO = "SUBSCRICAO", "Subscrição"
+    BONIFICACAO = "BONIFICACAO", "Bonificação"
     COMPRA = "COMPRA", "Compra"
     VENDA = "VENDA", "Venda"
+    IPO = "IPO", "IPO"
+    TAXAS = "TAXAS", "Taxas"
+    PROVENTOS_SOBRAS = "PROVENTOS_SOBRAS", "Proventos/Sobras"
+    CASHOUT = "CASHOUT", "Cashout"
+    AJUSTAR_QUANTIDADE = "AJUSTAR_QUANTIDADE", "Ajustar quantidade"
+    AJUSTAR_PRECO_MEDIO = "AJUSTAR_PRECO_MEDIO", "Ajustar preço médio"
 
 
 class TamanhoAtivoChoices(models.TextChoices):
@@ -176,7 +193,7 @@ class CorretoraChoices(models.TextChoices):
 class Operacao(models.Model):
     nome_ativo = models.CharField(max_length=150, verbose_name="Nome do Ativo", blank=True, default="")
     corretora = models.CharField(max_length=20, choices=CorretoraChoices.choices, default=CorretoraChoices.XP)
-    compra_venda = models.CharField(max_length=10, choices=TipoOperacaoChoices.choices, default=TipoOperacaoChoices.COMPRA, verbose_name="Negociação")
+    operacao = models.CharField(max_length=25, choices=TipoOperacaoChoices.choices, default=TipoOperacaoChoices.COMPRA, verbose_name="Operação")
     mercado = models.CharField(max_length=20, choices=MercadoChoices.choices, default=MercadoChoices.AVISTA)
     tipo = models.CharField(max_length=20, choices=TipoAtivoChoices.choices, default=TipoAtivoChoices.ACAO)
     quantidade = models.DecimalField(max_digits=18, decimal_places=6)
@@ -192,7 +209,7 @@ class Operacao(models.Model):
         ordering = ["-data", "-id"]
 
     def __str__(self):
-        return f"{self.compra_venda} - {self.ticker} - {self.data}"
+        return f"{self.operacao} - {self.nome_ativo} - {self.data}"
 
 
 class Provento(models.Model):
