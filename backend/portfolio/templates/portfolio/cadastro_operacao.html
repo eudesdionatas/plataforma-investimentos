@@ -9,19 +9,24 @@
     {% csrf_token %}
     <div class="col-md-6">
         <div class="row g-3">
-            <div class="col-md-5">
+            <div class="col-md-7">
                 {{ form.onde_investir.label_tag }}
                 {{ form.onde_investir }}
             </div>
-            <div class="col-md-7">
-                {{ form.nome_ativo.label_tag }}
-                {{ form.nome_ativo }}
+            <div class="col-md-5">
+                {{ form.corretora.label_tag }}
+                {{ form.corretora }}
+                <datalist id="lista_corretoras">
+                    {% for corretora in form.corretora_sugestoes %}
+                    <option value="{{ corretora }}"></option>
+                    {% endfor %}
+                </datalist>
             </div>
         </div>
     </div>
     <div class="col-md-6">
-        {{ form.corretora.label_tag }}
-        {{ form.corretora }}
+        {{ form.nome_ativo.label_tag }}
+        {{ form.nome_ativo }}
     </div>
     <div class="col-md-6">
         {{ form.operacao.label_tag }}

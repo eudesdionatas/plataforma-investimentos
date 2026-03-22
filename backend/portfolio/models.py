@@ -7,9 +7,32 @@ class ClasseAtivoChoices(models.TextChoices):
 
 
 class TipoAtivoChoices(models.TextChoices):
-    ACAO = "ACAO", "Ação"
-    FII = "FII", "FII"
+    # Tipos Bolsa de Valores
+    ACAO = "ACAO", "Ações"
+    ACAO_EUA = "ACAO_EUA", "Ações EUA"
+    BDR = "BDR", "BDR"
+    DESPESAS = "DESPESAS", "Despesas"
+    DIREITO_SUBSCRICAO = "DIREITO_SUBSCRICAO", "Direito de subscrição"
+    DOLAR_FUTURO = "DOLAR_FUTURO", "Dólar Futuro"
     ETF = "ETF", "ETF"
+    ETF_RENDA_FIXA = "ETF_RENDA_FIXA", "ETF Renda Fixa"
+    ETF_USA = "ETF_USA", "ETF USA"
+    FI_AGRO = "FI_AGRO", "FI Agro"
+    FII = "FII", "Fundo Imobiliário"
+    FUNDOS_ISENTOS = "FUNDOS_ISENTOS", "Fundos Isentos"
+    FUTUROS_OUTROS = "FUTUROS_OUTROS", "Futuros Outros"
+    INDICE_FUTURO = "INDICE_FUTURO", "Índice Futuro"
+    JUROS_FUTUROS = "JUROS_FUTUROS", "Juros Futuros"
+    MUTUAL_FUNDS_USA = "MUTUAL_FUNDS_USA", "Mutual Funds USA"
+    OPCOES = "OPCOES", "Opções"
+    OPCOES_EUA = "OPCOES_EUA", "Opções EUA"
+    OPCOES_FLEXIVEIS = "OPCOES_FLEXIVEIS", "Opções Flexíveis"
+    OURO_BOLSA = "OURO_BOLSA", "Ouro na bolsa"
+    REIT = "REIT", "REIT"
+    RENDA_FIXA_EUA = "RENDA_FIXA_EUA", "Renda Fixa EUA"
+    TERMO = "TERMO", "Termo"
+    
+    # Outros tipos
     FUNDO_ACOES = "FUNDO_ACOES", "Fundo de ações"
     FUNDO_MULTIMERCADO = "FUNDO_MULTIMERCADO", "Fundo Multimercado"
     FUNDO = "FUNDO", "Fundo"
@@ -22,7 +45,6 @@ class TipoAtivoChoices(models.TextChoices):
     CRI = "CRI", "CRI"
     CRA = "CRA", "CRA"
     STOCK = "STOCK", "Stock"
-    REIT = "REIT", "REIT"
     TITULO_PRIVADO = "TITULO_PRIVADO", "Título Privado"
 
 
@@ -164,11 +186,16 @@ class CorretoraChoices(models.TextChoices):
     XP = "XP", "XP Investimentos"
     RICO = "RICO", "Rico Investimentos"
     CLEAR = "CLEAR", "Clear Corretora"
+    NOVAFUTURA = "NOVAFUTURA", "Nova Futura"
     MODALMAIS = "MODALMAIS", "Modalmais"
     TORO = "TORO", "Toro Investimentos"
     EASYNVEST = "EASYNVEST", "Easynvest"
     GUIDE = "GUIDE", "Guide Investimentos"
     ORAMA = "ORAMA", "Órama"
+    BINANCE = "BINANCE", "Binance"
+    COINBASE = "COINBASE", "Coinbase"
+    MERCADOBITCOIN = "MERCADOBITCOIN", "Mercado Bitcoin"
+    FOXBIT = "FOXBIT", "Foxbit"
     SANTANDER = "SANTANDER", "Santander Corretora"
     BRADESCO = "BRADESCO", "Bradesco Corretora"
     ITAU = "ITAU", "Itaú Corretora"
@@ -192,7 +219,7 @@ class CorretoraChoices(models.TextChoices):
 
 class Operacao(models.Model):
     nome_ativo = models.CharField(max_length=150, verbose_name="Nome do Ativo", blank=True, default="")
-    corretora = models.CharField(max_length=20, choices=CorretoraChoices.choices, default=CorretoraChoices.XP)
+    corretora = models.CharField(max_length=20, default=CorretoraChoices.XP)
     operacao = models.CharField(max_length=25, choices=TipoOperacaoChoices.choices, default=TipoOperacaoChoices.COMPRA, verbose_name="Operação")
     mercado = models.CharField(max_length=20, choices=MercadoChoices.choices, default=MercadoChoices.AVISTA)
     tipo = models.CharField(max_length=20, choices=TipoAtivoChoices.choices, default=TipoAtivoChoices.ACAO)

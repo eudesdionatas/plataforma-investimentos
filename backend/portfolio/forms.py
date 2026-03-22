@@ -1,8 +1,34 @@
 from django import forms
 from datetime import date
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
-from .models import Operacao, TipoAtivoChoices
+from .models import CorretoraChoices, Operacao, TipoAtivoChoices
 
+
+TIPOS_BOLSA_VALORES = [
+    (TipoAtivoChoices.ACAO, TipoAtivoChoices.ACAO.label),
+    (TipoAtivoChoices.ACAO_EUA, TipoAtivoChoices.ACAO_EUA.label),
+    (TipoAtivoChoices.BDR, TipoAtivoChoices.BDR.label),
+    (TipoAtivoChoices.DESPESAS, TipoAtivoChoices.DESPESAS.label),
+    (TipoAtivoChoices.DIREITO_SUBSCRICAO, TipoAtivoChoices.DIREITO_SUBSCRICAO.label),
+    (TipoAtivoChoices.DOLAR_FUTURO, TipoAtivoChoices.DOLAR_FUTURO.label),
+    (TipoAtivoChoices.ETF, TipoAtivoChoices.ETF.label),
+    (TipoAtivoChoices.ETF_RENDA_FIXA, TipoAtivoChoices.ETF_RENDA_FIXA.label),
+    (TipoAtivoChoices.ETF_USA, TipoAtivoChoices.ETF_USA.label),
+    (TipoAtivoChoices.FI_AGRO, TipoAtivoChoices.FI_AGRO.label),
+    (TipoAtivoChoices.FII, TipoAtivoChoices.FII.label),
+    (TipoAtivoChoices.FUNDOS_ISENTOS, TipoAtivoChoices.FUNDOS_ISENTOS.label),
+    (TipoAtivoChoices.FUTUROS_OUTROS, TipoAtivoChoices.FUTUROS_OUTROS.label),
+    (TipoAtivoChoices.INDICE_FUTURO, TipoAtivoChoices.INDICE_FUTURO.label),
+    (TipoAtivoChoices.JUROS_FUTUROS, TipoAtivoChoices.JUROS_FUTUROS.label),
+    (TipoAtivoChoices.MUTUAL_FUNDS_USA, TipoAtivoChoices.MUTUAL_FUNDS_USA.label),
+    (TipoAtivoChoices.OPCOES, TipoAtivoChoices.OPCOES.label),
+    (TipoAtivoChoices.OPCOES_EUA, TipoAtivoChoices.OPCOES_EUA.label),
+    (TipoAtivoChoices.OPCOES_FLEXIVEIS, TipoAtivoChoices.OPCOES_FLEXIVEIS.label),
+    (TipoAtivoChoices.OURO_BOLSA, TipoAtivoChoices.OURO_BOLSA.label),
+    (TipoAtivoChoices.REIT, TipoAtivoChoices.REIT.label),
+    (TipoAtivoChoices.RENDA_FIXA_EUA, TipoAtivoChoices.RENDA_FIXA_EUA.label),
+    (TipoAtivoChoices.TERMO, TipoAtivoChoices.TERMO.label),
+]
 
 TIPOS_RENDA_FIXA = [
     (TipoAtivoChoices.FUNDO, TipoAtivoChoices.FUNDO.label),
@@ -24,7 +50,7 @@ TIPOS_RENDA_VARIAVEL = [
     (TipoAtivoChoices.FUNDO_MULTIMERCADO, TipoAtivoChoices.FUNDO_MULTIMERCADO.label),
 ]
 
-TIPOS_TODOS = TIPOS_RENDA_VARIAVEL + TIPOS_RENDA_FIXA
+TIPOS_TODOS = TIPOS_BOLSA_VALORES + TIPOS_RENDA_VARIAVEL + TIPOS_RENDA_FIXA
 
 ONDE_INVESTIR_CHOICES = [
     ("BOLSA_VALORES", "Bolsa de Valores (BR e EUA)"),
@@ -47,11 +73,37 @@ class OperacaoForm(forms.ModelForm):
         choices=ONDE_INVESTIR_CHOICES,
         widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_onde_investir'}),
     )
+    corretora = forms.CharField(
+        required=True,
+        label="Corretora",
+        widget=forms.TextInput(
+            attrs={
+                'class': 'form-control',
+                'id': 'id_corretora',
+                'list': 'lista_corretoras',
+                'autocomplete': 'off',
+                'placeholder': 'Selecione da lista ou digite uma corretora',
+            }
+        ),
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.initial['data'] = date.today()
         self.initial['onde_investir'] = "BOLSA_VALORES"
+        self.corretora_sugestoes = [choice.label for choice in CorretoraChoices]
+        self._corretora_por_nome = {
+            choice.label.casefold(): choice.value for choice in CorretoraChoices
+        }
+        self._corretora_por_codigo = {
+            choice.value.casefold(): choice.value for choice in CorretoraChoices
+        }
+
+        corretora_inicial = self.initial.get('corretora')
+        if corretora_inicial:
+            corretora_normalizada = self._corretora_por_codigo.get(str(corretora_inicial).casefold())
+            if corretora_normalizada:
+                self.initial['corretora'] = CorretoraChoices(corretora_normalizada).label
 
         self.fields['operacao'].label = 'Operação'
         self.fields['tipo'].label = 'Tipo de Ativo'
@@ -61,7 +113,9 @@ class OperacaoForm(forms.ModelForm):
         else:
             onde_investir = self.initial.get('onde_investir', 'BOLSA_VALORES')
 
-        if onde_investir in ONDE_INVESTIR_RENDA_VARIAVEL:
+        if onde_investir == "BOLSA_VALORES":
+            self.fields['tipo'].choices = TIPOS_BOLSA_VALORES
+        elif onde_investir in ONDE_INVESTIR_RENDA_VARIAVEL:
             self.fields['tipo'].choices = TIPOS_RENDA_VARIAVEL
         elif onde_investir in ONDE_INVESTIR_RENDA_FIXA:
             self.fields['tipo'].choices = TIPOS_RENDA_FIXA
@@ -73,6 +127,21 @@ class OperacaoForm(forms.ModelForm):
 
     def clean_valor_total(self):
         return self._parse_money(self.cleaned_data['valor_total'], "valor total")
+
+    def clean_corretora(self):
+        corretora = (self.cleaned_data.get('corretora') or "").strip()
+        if not corretora:
+            raise forms.ValidationError("Informe a corretora.")
+
+        corretora_por_codigo = self._corretora_por_codigo.get(corretora.casefold())
+        if corretora_por_codigo:
+            return corretora_por_codigo
+
+        corretora_por_nome = self._corretora_por_nome.get(corretora.casefold())
+        if corretora_por_nome:
+            return corretora_por_nome
+
+        return corretora
 
     def clean(self):
         cleaned_data = super().clean()
@@ -122,7 +191,6 @@ class OperacaoForm(forms.ModelForm):
         }
         widgets = {
             'nome_ativo': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_nome_ativo'}),
-            'corretora': forms.Select(attrs={'class': 'form-select'}),
             'operacao': forms.Select(attrs={'class': 'form-select'}),
             'mercado': forms.Select(attrs={'class': 'form-select'}),
             'tipo': forms.Select(attrs={'class': 'form-select'}),

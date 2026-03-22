@@ -3,6 +3,31 @@ let precoInput;
 let valorInput;
 
 const tipoAtivoPorClasse = {
+    bolsaValores: [
+        { value: 'ACAO', label: 'Ações' },
+        { value: 'ACAO_EUA', label: 'Ações EUA' },
+        { value: 'BDR', label: 'BDR' },
+        { value: 'DESPESAS', label: 'Despesas' },
+        { value: 'DIREITO_SUBSCRICAO', label: 'Direito de subscrição' },
+        { value: 'DOLAR_FUTURO', label: 'Dólar Futuro' },
+        { value: 'ETF', label: 'ETF' },
+        { value: 'ETF_RENDA_FIXA', label: 'ETF Renda Fixa' },
+        { value: 'ETF_USA', label: 'ETF USA' },
+        { value: 'FI_AGRO', label: 'FI Agro' },
+        { value: 'FII', label: 'Fundo Imobiliário' },
+        { value: 'FUNDOS_ISENTOS', label: 'Fundos Isentos' },
+        { value: 'FUTUROS_OUTROS', label: 'Futuros Outros' },
+        { value: 'INDICE_FUTURO', label: 'Índice Futuro' },
+        { value: 'JUROS_FUTUROS', label: 'Juros Futuros' },
+        { value: 'MUTUAL_FUNDS_USA', label: 'Mutual Funds USA' },
+        { value: 'OPCOES', label: 'Opções' },
+        { value: 'OPCOES_EUA', label: 'Opções EUA' },
+        { value: 'OPCOES_FLEXIVEIS', label: 'Opções Flexíveis' },
+        { value: 'OURO_BOLSA', label: 'Ouro na bolsa' },
+        { value: 'REIT', label: 'REIT' },
+        { value: 'RENDA_FIXA_EUA', label: 'Renda Fixa EUA' },
+        { value: 'TERMO', label: 'Termo' }
+    ],
     rendaFixa: [
         { value: 'FUNDO', label: 'Fundo' },
         { value: 'TITULO_PUBLICO', label: 'Título Público' },
@@ -15,8 +40,8 @@ const tipoAtivoPorClasse = {
         { value: 'CRA', label: 'CRA' }
     ],
     rendaVariavel: [
-        { value: 'ACAO', label: 'Ação' },
-        { value: 'FII', label: 'FII' },
+        { value: 'ACAO', label: 'Ações' },
+        { value: 'FII', label: 'Fundo Imobiliário' },
         { value: 'ETF', label: 'ETF' },
         { value: 'FUNDO_ACOES', label: 'Fundo de ações' },
         { value: 'FUNDO_MULTIMERCADO', label: 'Fundo Multimercado' }
@@ -233,6 +258,10 @@ function setupAtmMask(input, renderFunc) {
 }
 
 function getClassePorOndeInvestir(ondeInvestir) {
+    if (ondeInvestir === 'BOLSA_VALORES') {
+        return 'bolsaValores';
+    }
+
     if (ondeInvestirRendaVariavel.has(ondeInvestir)) {
         return 'rendaVariavel';
     }
@@ -265,10 +294,12 @@ function updateTipoAtivoOptions(ondeInvestir) {
     const classe = getClassePorOndeInvestir(ondeInvestir);
     let options = tipoAtivoPorClasse.rendaFixa;
 
-    if (classe === 'rendaVariavel') {
+    if (classe === 'bolsaValores') {
+        options = tipoAtivoPorClasse.bolsaValores;
+    } else if (classe === 'rendaVariavel') {
         options = tipoAtivoPorClasse.rendaVariavel;
     } else if (classe === 'todos') {
-        options = [...tipoAtivoPorClasse.rendaVariavel, ...tipoAtivoPorClasse.rendaFixa];
+        options = [...tipoAtivoPorClasse.bolsaValores, ...tipoAtivoPorClasse.rendaVariavel, ...tipoAtivoPorClasse.rendaFixa];
     }
 
     tipoAtivoSelect.innerHTML = '';
