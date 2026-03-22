@@ -3,7 +3,6 @@ Estou usando:
  - Django 
  - HTML 
  - Bootstrap
- - Bootstrap
  - Javascript 
  - PostgreSQL (por enquanto)
 
