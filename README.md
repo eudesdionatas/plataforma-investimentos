@@ -1,9 +1,10 @@
 Estou usando:
  - Python 
- - -Django 
+ - Django 
  - HTML 
  - Bootstrap 
  - PostgreSQL (por enquanto)
+
 Ambiente de desenvolvimento:
   - VSCode +
   - Extensão Codex
